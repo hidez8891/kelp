@@ -7,19 +7,24 @@ import (
 	"github.com/urfave/cli"
 )
 
-var ()
-
-func main() {
+// newApp returns *cli.App [use testing]
+func newApp() *cli.App {
 	app := cli.NewApp()
 
 	// application infomation
 	app.Name = "kelp"
 	app.Usage = "simple image converter"
-	app.Version = "0.1.0"
+	app.Version = "0.1.1"
 
 	// convert commands
 	app.Commands = ConvertCommands
 	app.HideHelp = true
+
+	return app
+}
+
+func main() {
+	app := newApp()
 
 	err := app.Run(os.Args)
 	if err != nil {

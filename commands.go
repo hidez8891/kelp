@@ -32,10 +32,12 @@ type convertEncodeFn = func(w io.Writer, m image.Image) error
 
 // convert function
 func convert(ctx *cli.Context, converter convertEncodeFn) error {
+	partialFail := false
 	for _, srcPath := range targetFilePaths {
 		r, err := os.Open(srcPath)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
+			partialFail = true
 			continue
 		}
 		defer r.Close()
@@ -43,6 +45,7 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 		img, _, err := image.Decode(r)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
+			partialFail = true
 			continue
 		}
 
@@ -50,6 +53,7 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 		w, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, destPath))
+			partialFail = true
 			continue
 		}
 		defer w.Close()
@@ -57,10 +61,14 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 		err = converter(w, img)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
+			partialFail = true
 			continue
 		}
 	}
 
+	if partialFail {
+		return cli.NewExitError("warn: some images failed to convert", 1)
+	}
 	return nil
 }
 
@@ -79,7 +87,7 @@ func fetchSourceFilePaths(ctx *cli.Context) error {
 	if len(ctx.Args()) == 0 {
 		return cli.NewExitError("need at least one source file", 1)
 	}
-	targetFilePaths = append(targetFilePaths, ctx.Args()...)
+	targetFilePaths = ctx.Args()
 
 	return nil
 }
