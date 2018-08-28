@@ -23,8 +23,8 @@ var (
 	// ConvertCommands is image converter commands
 	ConvertCommands = make([]cli.Command, 0)
 
-	// TargetFilePaths is source image file path list
-	TargetFilePaths = make([]string, 0)
+	// source image file path list
+	targetFilePaths = make([]string, 0)
 )
 
 // common convert encoder function interface
@@ -32,7 +32,7 @@ type convertEncodeFn = func(w io.Writer, m image.Image) error
 
 // convert function
 func convert(ctx *cli.Context, converter convertEncodeFn) error {
-	for _, srcPath := range TargetFilePaths {
+	for _, srcPath := range targetFilePaths {
 		r, err := os.Open(srcPath)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
@@ -73,13 +73,13 @@ func generateDestinationPath(srcPath string, destExt string) string {
 	return srcPath + "." + destExt
 }
 
-// validate common flags
-func validateFlags(ctx *cli.Context) error {
+// fetch source file path list from command-line arguments
+func fetchSourceFilePaths(ctx *cli.Context) error {
 	// check input files [need at least one]
 	if len(ctx.Args()) == 0 {
 		return cli.NewExitError("need at least one source file", 1)
 	}
-	TargetFilePaths = append(TargetFilePaths, ctx.Args()...)
+	targetFilePaths = append(targetFilePaths, ctx.Args()...)
 
 	return nil
 }
@@ -101,7 +101,7 @@ func init() {
 			Name:  "bmp",
 			Usage: "convert to BMP format",
 			Action: func(ctx *cli.Context) error {
-				if err := validateFlags(ctx); err != nil {
+				if err := fetchSourceFilePaths(ctx); err != nil {
 					return err
 				}
 
@@ -116,7 +116,7 @@ func init() {
 			Name:  "png",
 			Usage: "convert to PNG format",
 			Action: func(ctx *cli.Context) error {
-				if err := validateFlags(ctx); err != nil {
+				if err := fetchSourceFilePaths(ctx); err != nil {
 					return err
 				}
 
@@ -131,7 +131,7 @@ func init() {
 			Name:  "gif",
 			Usage: "convert to gif format",
 			Action: func(ctx *cli.Context) error {
-				if err := validateFlags(ctx); err != nil {
+				if err := fetchSourceFilePaths(ctx); err != nil {
 					return err
 				}
 
@@ -147,7 +147,7 @@ func init() {
 			Name:  "jpg",
 			Usage: "convert to JPEG format",
 			Action: func(ctx *cli.Context) error {
-				if err := validateFlags(ctx); err != nil {
+				if err := fetchSourceFilePaths(ctx); err != nil {
 					return err
 				}
 				if err := validateJpegFlags(ctx); err != nil {
