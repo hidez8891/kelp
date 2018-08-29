@@ -14,7 +14,7 @@ func newApp() *cli.App {
 	// application infomation
 	app.Name = "kelp"
 	app.Usage = "simple image converter"
-	app.Version = "0.1.1"
+	app.Version = "0.1.2"
 
 	// convert commands
 	app.Commands = ConvertCommands

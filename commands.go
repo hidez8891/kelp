@@ -12,6 +12,7 @@ import (
 	"image/jpeg"
 	"image/png"
 
+	"github.com/mattn/go-zglob"
 	"github.com/urfave/cli"
 	"golang.org/x/image/bmp"
 )
@@ -87,7 +88,16 @@ func fetchSourceFilePaths(ctx *cli.Context) error {
 	if len(ctx.Args()) == 0 {
 		return cli.NewExitError("need at least one source file", 1)
 	}
-	targetFilePaths = ctx.Args()
+
+	// expand wildcard path
+	targetFilePaths = make([]string, 0)
+	for _, path := range ctx.Args() {
+		paths := expandFilePath(path)
+		targetFilePaths = append(targetFilePaths, paths...)
+	}
+	if len(targetFilePaths) == 0 {
+		return cli.NewExitError("need at least one source file", 1)
+	}
 
 	return nil
 }
@@ -100,6 +110,16 @@ func validateJpegFlags(ctx *cli.Context) error {
 	}
 
 	return nil
+}
+
+// expand file path (use wildcard)
+func expandFilePath(path string) []string {
+	mathces, err := zglob.Glob(path)
+	if err != nil {
+		log.Printf("warn: %v\n", err)
+	}
+
+	return mathces
 }
 
 func init() {
