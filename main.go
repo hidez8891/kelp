@@ -12,9 +12,9 @@ func newApp() *cli.App {
 	app := cli.NewApp()
 
 	// application infomation
-	app.Name = "kelp"
-	app.Usage = "simple image converter"
-	app.Version = "0.1.2"
+	app.Name = _Name
+	app.Usage = _Description
+	app.Version = _Version
 
 	// convert commands
 	app.Commands = ConvertCommands
