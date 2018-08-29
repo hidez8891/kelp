@@ -36,6 +36,11 @@ func init() {
 	cli.AppHelpTemplate = `
 {{- "NAME:"}}
   {{.Name}} - {{.Usage}}
+  {{- if .Version}}
+    {{- " [version "}}
+    {{- .Version}}
+    {{- "]"}}
+  {{- end}}
 
 USAGE:
   {{.HelpName}}
@@ -63,9 +68,21 @@ FORMAT:
   {{- end}}
 {{- end}}
 
-{{- if .Version}}
-VERSION:
-   {{.Version}}
+{{- if .Commands}}
+FORMAT OPTIONS:
+  {{- "\n"}}
+  {{- range .Commands}}
+    {{- if .VisibleFlags}}
+      {{- "  "}}
+      {{- join .Names ", "}}
+      {{- "\n"}}
+      {{- range .VisibleFlags}}
+        {{- "    "}}
+        {{- .}}
+        {{- "\n"}}
+      {{- end}}
+    {{- end}}
+  {{- end}}
 {{- end}}
 `
 }
