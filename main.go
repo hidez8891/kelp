@@ -1,10 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/urfave/cli"
+)
+
+var (
+	// job thread number
+	jobs = 1
 )
 
 // newApp returns *cli.App [use testing]
@@ -20,7 +26,28 @@ func newApp() *cli.App {
 	app.Commands = ConvertCommands
 	app.HideHelp = true
 
+	// global options
+	app.Flags = []cli.Flag{
+		cli.IntFlag{
+			Name:        "jobs, j",
+			Usage:       "convert job thread number",
+			Value:       1,
+			Destination: &jobs,
+		},
+	}
+
 	return app
+}
+
+// validate flags
+func validateFlags(ctx *cli.Context) error {
+	// check jobs range
+	if jobs < 1 {
+		msg := fmt.Sprintf("invalid job thread number [%d]", jobs)
+		return cli.NewExitError(msg, 1)
+	}
+
+	return nil
 }
 
 func main() {

@@ -40,6 +40,37 @@ func TestConvertCommands(t *testing.T) {
 		assert.Equal(t, isExists(tt.outputPath), true)
 	}
 }
+
+func TestParallelConvert(t *testing.T) {
+	tests := []struct {
+		args        []string
+		outputPaths []string
+	}{
+		{[]string{"kelp", "-j", "2", "png", "testdata/*.tmp"}, []string{"testdata/dummy_png.png"}},
+		{[]string{"kelp", "-j", "2", "png", "testdata/**/*.tmp"}, []string{"testdata/dummy_png.png", "testdata/dir1/dummy_png.png", "testdata/dir1/dir2/dummy_png.png"}},
+	}
+
+	defer func() {
+		for _, tt := range tests {
+			for _, opath := range tt.outputPaths {
+				os.Remove(opath)
+			}
+		}
+	}()
+
+	app := newApp()
+	app.Writer = ioutil.Discard
+	for _, tt := range tests {
+		err := app.Run(tt.args)
+		assert.Nil(t, err)
+
+		for _, opath := range tt.outputPaths {
+			assert.Equal(t, isExists(opath), true)
+			os.Remove(opath)
+		}
+	}
+}
+
 func TestExpandWildcardPath(t *testing.T) {
 	tests := []struct {
 		args        []string

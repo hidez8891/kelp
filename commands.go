@@ -14,6 +14,7 @@ import (
 
 	"github.com/mattn/go-zglob"
 	"github.com/urfave/cli"
+	"go.uber.org/atomic"
 	"golang.org/x/image/bmp"
 )
 
@@ -33,41 +34,42 @@ type convertEncodeFn = func(w io.Writer, m image.Image) error
 
 // convert function
 func convert(ctx *cli.Context, converter convertEncodeFn) error {
-	partialFail := false
-	for _, srcPath := range targetFilePaths {
+	partialFail := atomic.NewBool(false)
+
+	Concurrent(jobs, targetFilePaths, func(srcPath string) {
 		r, err := os.Open(srcPath)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
-			partialFail = true
-			continue
+			partialFail.Store(true)
+			return
 		}
 		defer r.Close()
 
 		img, _, err := image.Decode(r)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
-			partialFail = true
-			continue
+			partialFail.Store(true)
+			return
 		}
 
 		destPath := generateDestinationPath(srcPath, ctx.Command.Name)
 		w, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, destPath))
-			partialFail = true
-			continue
+			partialFail.Store(true)
+			return
 		}
 		defer w.Close()
 
 		err = converter(w, img)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
-			partialFail = true
-			continue
+			partialFail.Store(true)
+			return
 		}
-	}
+	})
 
-	if partialFail {
+	if partialFail.Load() {
 		return cli.NewExitError("warn: some images failed to convert", 1)
 	}
 	return nil
@@ -102,6 +104,19 @@ func fetchSourceFilePaths(ctx *cli.Context) error {
 	return nil
 }
 
+// preprocess command flags & args
+func preprocessCommandArgs(ctx *cli.Context) error {
+	if err := validateFlags(ctx); err != nil {
+		return err
+	}
+
+	if err := fetchSourceFilePaths(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // validate jpeg flags
 func validateJpegFlags(ctx *cli.Context) error {
 	// check quality range
@@ -129,7 +144,7 @@ func init() {
 			Name:  "bmp",
 			Usage: "convert to BMP format",
 			Action: func(ctx *cli.Context) error {
-				if err := fetchSourceFilePaths(ctx); err != nil {
+				if err := preprocessCommandArgs(ctx); err != nil {
 					return err
 				}
 
@@ -144,7 +159,7 @@ func init() {
 			Name:  "png",
 			Usage: "convert to PNG format",
 			Action: func(ctx *cli.Context) error {
-				if err := fetchSourceFilePaths(ctx); err != nil {
+				if err := preprocessCommandArgs(ctx); err != nil {
 					return err
 				}
 
@@ -159,7 +174,7 @@ func init() {
 			Name:  "gif",
 			Usage: "convert to gif format",
 			Action: func(ctx *cli.Context) error {
-				if err := fetchSourceFilePaths(ctx); err != nil {
+				if err := preprocessCommandArgs(ctx); err != nil {
 					return err
 				}
 
@@ -175,7 +190,7 @@ func init() {
 			Name:  "jpg",
 			Usage: "convert to JPEG format",
 			Action: func(ctx *cli.Context) error {
-				if err := fetchSourceFilePaths(ctx); err != nil {
+				if err := preprocessCommandArgs(ctx); err != nil {
 					return err
 				}
 				if err := validateJpegFlags(ctx); err != nil {
