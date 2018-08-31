@@ -89,7 +89,7 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 	}
 
 	if partialFail.Load() {
-		return cli.NewExitError("warn: some images failed to convert", 1)
+		return cli.NewExitError("", 1)
 	}
 	return nil
 }
@@ -105,9 +105,10 @@ func generateDestinationPath(srcPath string, destExt string) string {
 
 // fetch source file path list from command-line arguments
 func fetchSourceFilePaths(ctx *cli.Context) error {
-	// check input files [need at least one]
+	// check input files
+	// if not set file path, stop run without error.
 	if len(ctx.Args()) == 0 {
-		return cli.NewExitError("need at least one source file", 1)
+		return cli.NewExitError("", 0)
 	}
 
 	// expand wildcard path
@@ -117,7 +118,7 @@ func fetchSourceFilePaths(ctx *cli.Context) error {
 		targetFilePaths = append(targetFilePaths, paths...)
 	}
 	if len(targetFilePaths) == 0 {
-		return cli.NewExitError("need at least one source file", 1)
+		return cli.NewExitError("", 0)
 	}
 
 	return nil
