@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"image/gif"
 	"image/jpeg"
@@ -114,8 +115,12 @@ func fetchSourceFilePaths(ctx *cli.Context) error {
 	// expand wildcard path
 	targetFilePaths = make([]string, 0)
 	for _, path := range ctx.Args() {
-		paths := expandFilePath(path)
-		targetFilePaths = append(targetFilePaths, paths...)
+		if strings.Contains(path, "*") {
+			paths := expandFilePath(path)
+			targetFilePaths = append(targetFilePaths, paths...)
+		} else {
+			targetFilePaths = append(targetFilePaths, path)
+		}
 	}
 	if len(targetFilePaths) == 0 {
 		return cli.NewExitError("", 0)
