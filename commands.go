@@ -69,6 +69,9 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 		}
 
 		destPath := generateDestinationPath(srcPath, ctx.Command.Name)
+		destDir := filepath.Dir(destPath)
+		os.MkdirAll(destDir, 0666)
+
 		w, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, destPath))
@@ -101,7 +104,19 @@ func generateDestinationPath(srcPath string, destExt string) string {
 	if len(ext) > 0 {
 		srcPath = srcPath[0 : len(srcPath)-len(ext)]
 	}
-	return srcPath + "." + destExt
+	destPath := srcPath + "." + destExt
+
+	if outDir != "" {
+		file := filepath.Base(destPath)
+		destDir := filepath.Clean(filepath.Dir(destPath))
+
+		for len(destDir) > 0 && strings.HasPrefix(destPath, "..") {
+			// remove "../" or "..\"
+			destDir = destDir[:3]
+		}
+		destPath = filepath.Join(outDir, destDir, file)
+	}
+	return destPath
 }
 
 // fetch source file path list from command-line arguments

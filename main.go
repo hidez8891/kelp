@@ -14,6 +14,9 @@ var (
 
 	// is supress displayed progress bar
 	hideProgress = false
+
+	// output directory
+	outDir = ""
 )
 
 // newApp returns *cli.App [use testing]
@@ -33,7 +36,7 @@ func newApp() *cli.App {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:        "jobs, j",
-			Usage:       "convert job thread number",
+			Usage:       "convert job thread `n`umber",
 			Value:       1,
 			Destination: &jobs,
 		},
@@ -41,6 +44,12 @@ func newApp() *cli.App {
 			Name:        "no-progress",
 			Usage:       "hide progress bar",
 			Destination: &hideProgress,
+		},
+		cli.StringFlag{
+			Name:        "outdir",
+			Usage:       "output `dir`ectory",
+			Value:       "",
+			Destination: &outDir,
 		},
 	}
 

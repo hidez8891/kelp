@@ -133,3 +133,46 @@ func TestForbiddenOverwrite(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.NotEqual(t, exitcode, 0)
 }
+
+func TestSetOutputDirectory(t *testing.T) {
+	testdir := "./test_out"
+
+	tests := []struct {
+		args        []string
+		outputPaths []string
+	}{
+		{
+			[]string{"kelp", "--outdir", testdir, "png", "testdata/*.tmp"},
+			[]string{testdir + "/testdata/dummy_png.png"}},
+		{
+			[]string{"kelp", "--outdir", testdir, "png", "testdata/**/*.tmp"},
+			[]string{
+				testdir + "/testdata/dummy_png.png",
+				testdir + "/testdata/dir1/dummy_png.png",
+				testdir + "/testdata/dir1/dir2/dummy_png.png",
+			},
+		},
+	}
+
+	defer func() {
+		for _, tt := range tests {
+			for _, opath := range tt.outputPaths {
+				os.Remove(opath)
+			}
+		}
+		os.RemoveAll(testdir)
+	}()
+
+	app := newApp()
+	app.Writer = ioutil.Discard
+	progressWriter = ioutil.Discard // supress progress bar
+	for _, tt := range tests {
+		err := app.Run(tt.args)
+		assert.Nil(t, err)
+
+		for _, opath := range tt.outputPaths {
+			assert.Equal(t, isExists(opath), true)
+			os.Remove(opath)
+		}
+	}
+}
