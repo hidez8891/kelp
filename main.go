@@ -79,6 +79,9 @@ func init() {
 
 USAGE:
   {{.HelpName}}
+    {{- if .VisibleFlags}}
+      {{- " [options]"}}
+    {{- end}}
     {{- if .Commands}}
       {{- " format [format options]"}}
     {{- end}}
@@ -88,6 +91,16 @@ USAGE:
       {{- " [file...]"}}
     {{- end}}
   {{- "\n"}}
+
+{{- if .VisibleFlags}}
+OPTIONS:
+  {{- "\n"}}
+  {{- range .VisibleFlags}}
+    {{- "  "}}
+    {{- .}}
+    {{- "\n"}}
+  {{- end}}
+{{- end}}
 
 {{- if .Commands}}
 FORMAT:
