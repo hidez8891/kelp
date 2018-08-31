@@ -11,6 +11,9 @@ import (
 var (
 	// job thread number
 	jobs = 1
+
+	// is supress displayed progress bar
+	hideProgress = false
 )
 
 // newApp returns *cli.App [use testing]
@@ -33,6 +36,11 @@ func newApp() *cli.App {
 			Usage:       "convert job thread number",
 			Value:       1,
 			Destination: &jobs,
+		},
+		cli.BoolFlag{
+			Name:        "no-progress",
+			Usage:       "hide progress bar",
+			Destination: &hideProgress,
 		},
 	}
 

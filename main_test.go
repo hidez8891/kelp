@@ -34,6 +34,7 @@ func TestConvertCommands(t *testing.T) {
 
 	app := newApp()
 	app.Writer = ioutil.Discard
+	progressWriter = ioutil.Discard // supress progress bar
 	for _, tt := range tests {
 		err := app.Run(tt.args)
 		assert.Nil(t, err)
@@ -60,6 +61,7 @@ func TestParallelConvert(t *testing.T) {
 
 	app := newApp()
 	app.Writer = ioutil.Discard
+	progressWriter = ioutil.Discard // supress progress bar
 	for _, tt := range tests {
 		err := app.Run(tt.args)
 		assert.Nil(t, err)
@@ -90,6 +92,7 @@ func TestExpandWildcardPath(t *testing.T) {
 
 	app := newApp()
 	app.Writer = ioutil.Discard
+	progressWriter = ioutil.Discard // supress progress bar
 	for _, tt := range tests {
 		err := app.Run(tt.args)
 		assert.Nil(t, err)
@@ -120,7 +123,8 @@ func TestForbiddenOverwrite(t *testing.T) {
 
 	app := newApp()
 	app.Writer = ioutil.Discard
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(ioutil.Discard)   // supress log output
+	progressWriter = ioutil.Discard // supress progress bar
 
 	err := app.Run(args)
 	assert.Nil(t, err)

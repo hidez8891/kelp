@@ -16,6 +16,7 @@ import (
 	"github.com/urfave/cli"
 	"go.uber.org/atomic"
 	"golang.org/x/image/bmp"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 var (
@@ -27,6 +28,9 @@ var (
 
 	// source image file path list
 	targetFilePaths = make([]string, 0)
+
+	// progress output writer
+	progressWriter io.Writer = os.Stdout
 )
 
 // common convert encoder function interface
@@ -36,7 +40,18 @@ type convertEncodeFn = func(w io.Writer, m image.Image) error
 func convert(ctx *cli.Context, converter convertEncodeFn) error {
 	partialFail := atomic.NewBool(false)
 
+	var progress *pb.ProgressBar
+	if !hideProgress {
+		progress = pb.New(len(targetFilePaths))
+		progress.Output = progressWriter
+		progress.Start()
+	}
+
 	Concurrent(jobs, targetFilePaths, func(srcPath string) {
+		if progress != nil {
+			progress.Increment()
+		}
+
 		r, err := os.Open(srcPath)
 		if err != nil {
 			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
@@ -68,6 +83,10 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 			return
 		}
 	})
+
+	if progress != nil {
+		progress.Finish()
+	}
 
 	if partialFail.Load() {
 		return cli.NewExitError("warn: some images failed to convert", 1)
