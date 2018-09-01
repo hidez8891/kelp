@@ -110,7 +110,7 @@ func TestForbiddenOverwrite(t *testing.T) {
 
 	defer func() {
 		os.Remove(outputPath)
-		log.SetOutput(os.Stdout)
+		log.SetOutput(os.Stdout) // TODO fix
 		cli.OsExiter = os.Exit
 		cli.ErrWriter = os.Stderr
 	}()

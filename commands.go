@@ -55,7 +55,7 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 
 		r, err := os.Open(srcPath)
 		if err != nil {
-			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
+			log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, srcPath))
 			partialFail.Store(true)
 			return
 		}
@@ -63,7 +63,7 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 
 		img, _, err := image.Decode(r)
 		if err != nil {
-			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
+			log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, srcPath))
 			partialFail.Store(true)
 			return
 		}
@@ -74,7 +74,7 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 
 		w, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
 		if err != nil {
-			log.Println(fmt.Sprintf("error: %v [%s]", err, destPath))
+			log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, destPath))
 			partialFail.Store(true)
 			return
 		}
@@ -82,7 +82,7 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 
 		err = converter(w, img)
 		if err != nil {
-			log.Println(fmt.Sprintf("error: %v [%s]", err, srcPath))
+			log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, srcPath))
 			partialFail.Store(true)
 			return
 		}
@@ -171,7 +171,7 @@ func validateJpegFlags(ctx *cli.Context) error {
 func expandFilePath(path string) []string {
 	mathces, err := zglob.Glob(path)
 	if err != nil {
-		log.Printf("warn: %v\n", err)
+		log.Println(fmt.Sprintf("[WARN] %v\n", err))
 	}
 
 	return mathces

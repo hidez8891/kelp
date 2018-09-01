@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/hashicorp/logutils"
 	"github.com/urfave/cli"
 )
 
@@ -77,6 +78,13 @@ func main() {
 }
 
 func init() {
+	filter := &logutils.LevelFilter{
+		Levels:   []logutils.LogLevel{"DEBUG", "WARN", "ERROR"},
+		MinLevel: logutils.LogLevel("WARN"),
+		Writer:   os.Stderr,
+	}
+	log.SetOutput(filter)
+
 	cli.AppHelpTemplate = `
 {{- "NAME:"}}
   {{.Name}} - {{.Usage}}
