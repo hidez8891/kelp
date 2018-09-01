@@ -10,55 +10,30 @@ import (
 	"github.com/urfave/cli"
 )
 
+type testData struct {
+	args        []string
+	outputPaths []string
+}
+
 func isExists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
 }
 
-func TestConvertCommands(t *testing.T) {
-	tests := []struct {
-		args       []string
-		outputPath string
-	}{
-		{[]string{"kelp", "bmp", "testdata/dummy_png"}, "testdata/dummy_png.bmp"},
-		{[]string{"kelp", "png", "testdata/dummy_png"}, "testdata/dummy_png.png"},
-		{[]string{"kelp", "gif", "testdata/dummy_png"}, "testdata/dummy_png.gif"},
-		{[]string{"kelp", "jpg", "testdata/dummy_png"}, "testdata/dummy_png.jpg"},
-	}
-
-	defer func() {
-		for _, tt := range tests {
-			os.Remove(tt.outputPath)
-		}
-	}()
-
+func setupApp() *cli.App {
 	app := newApp()
 	app.Writer = ioutil.Discard
-	for _, tt := range tests {
-		err := app.Run(tt.args)
-		assert.Nil(t, err)
-		assert.Equal(t, isExists(tt.outputPath), true)
-	}
+
+	progressWriter = ioutil.Discard // supress progress bar
+	log.SetOutput(ioutil.Discard)   // supress log output
+
+	return app
 }
-func TestExpandWildcardPath(t *testing.T) {
-	tests := []struct {
-		args        []string
-		outputPaths []string
-	}{
-		{[]string{"kelp", "png", "testdata/*.tmp"}, []string{"testdata/dummy_png.png"}},
-		{[]string{"kelp", "png", "testdata/**/*.tmp"}, []string{"testdata/dummy_png.png", "testdata/dir1/dummy_png.png", "testdata/dir1/dir2/dummy_png.png"}},
-	}
 
-	defer func() {
-		for _, tt := range tests {
-			for _, opath := range tt.outputPaths {
-				os.Remove(opath)
-			}
-		}
-	}()
+func testHelperRunApp(t *testing.T, tests []testData) {
+	t.Helper()
 
-	app := newApp()
-	app.Writer = ioutil.Discard
+	app := setupApp()
 	for _, tt := range tests {
 		err := app.Run(tt.args)
 		assert.Nil(t, err)
@@ -70,13 +45,83 @@ func TestExpandWildcardPath(t *testing.T) {
 	}
 }
 
+func TestConvertCommands(t *testing.T) {
+	tests := []testData{
+		{
+			[]string{"kelp", "bmp", "testdata/dummy_png.tmp"},
+			[]string{"testdata/dummy_png.bmp"},
+		},
+		{
+			[]string{"kelp", "png", "testdata/dummy_png.tmp"},
+			[]string{"testdata/dummy_png.png"},
+		},
+		{
+			[]string{"kelp", "gif", "testdata/dummy_png.tmp"},
+			[]string{"testdata/dummy_png.gif"},
+		},
+		{
+			[]string{"kelp", "jpg", "testdata/dummy_png.tmp"},
+			[]string{"testdata/dummy_png.jpg"},
+		},
+	}
+
+	testHelperRunApp(t, tests)
+}
+
+func TestParallelConvert(t *testing.T) {
+	tests := []testData{
+		{
+			[]string{"kelp", "-j", "2", "png", "testdata/*.tmp"},
+			[]string{"testdata/dummy_png.png"},
+		},
+		{
+			[]string{"kelp", "-j", "2", "png", "testdata/**/*.tmp"},
+			[]string{
+				"testdata/dummy_png.png",
+				"testdata/dir1/dummy_png.png",
+				"testdata/dir1/dir2/dummy_png.png",
+			},
+		},
+	}
+
+	testHelperRunApp(t, tests)
+}
+
+func TestExpandWildcardPath(t *testing.T) {
+	tests := []testData{
+		{
+			[]string{"kelp", "png", "testdata/*.tmp"},
+			[]string{"testdata/dummy_png.png"},
+		},
+		{
+			[]string{"kelp", "png", "testdata/**/*.tmp"},
+			[]string{
+				"testdata/dummy_png.png",
+				"testdata/dir1/dummy_png.png",
+				"testdata/dir1/dir2/dummy_png.png",
+			},
+		},
+		{
+			[]string{"kelp", "png", "testdata/**/*.{tmp,tmp2}"},
+			[]string{
+				"testdata/dummy_png.png",
+				"testdata/dummy_jpg.png",
+				"testdata/dir1/dummy_png.png",
+				"testdata/dir1/dir2/dummy_png.png",
+				"testdata/dir1/dir2/dummy_jpg.png",
+			},
+		},
+	}
+
+	testHelperRunApp(t, tests)
+}
+
 func TestForbiddenOverwrite(t *testing.T) {
-	args := []string{"kelp", "png", "testdata/dummy_png"}
+	args := []string{"kelp", "png", "testdata/dummy_png.tmp"}
 	outputPath := "testdata/dummy_png.png"
 
 	defer func() {
 		os.Remove(outputPath)
-		log.SetOutput(os.Stdout)
 		cli.OsExiter = os.Exit
 		cli.ErrWriter = os.Stderr
 	}()
@@ -87,14 +132,51 @@ func TestForbiddenOverwrite(t *testing.T) {
 	}
 	cli.ErrWriter = ioutil.Discard
 
-	app := newApp()
-	app.Writer = ioutil.Discard
-	log.SetOutput(ioutil.Discard)
+	app := setupApp()
 
+	// create file
 	err := app.Run(args)
 	assert.Nil(t, err)
 
+	// forbid create duplicate file
 	err = app.Run(args)
 	assert.NotNil(t, err)
 	assert.NotEqual(t, exitcode, 0)
+}
+
+func TestAllowOverwrite(t *testing.T) {
+	args := []string{"kelp", "-f", "png", "testdata/dummy_png.tmp"}
+	outputPath := "testdata/dummy_png.png"
+
+	defer os.Remove(outputPath)
+	app := setupApp()
+
+	// create file
+	err := app.Run(args)
+	assert.Nil(t, err)
+
+	// allow create duplicate file
+	err = app.Run(args)
+	assert.Nil(t, err)
+}
+
+func TestSetOutputDirectory(t *testing.T) {
+	testdir := "./test_out"
+
+	tests := []testData{
+		{
+			[]string{"kelp", "--outdir", testdir, "png", "testdata/*.tmp"},
+			[]string{testdir + "/testdata/dummy_png.png"}},
+		{
+			[]string{"kelp", "--outdir", testdir, "png", "testdata/**/*.tmp"},
+			[]string{
+				testdir + "/testdata/dummy_png.png",
+				testdir + "/testdata/dir1/dummy_png.png",
+				testdir + "/testdata/dir1/dir2/dummy_png.png",
+			},
+		},
+	}
+
+	defer os.RemoveAll(testdir)
+	testHelperRunApp(t, tests)
 }

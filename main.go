@@ -1,10 +1,26 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/hashicorp/logutils"
 	"github.com/urfave/cli"
+)
+
+var (
+	// allow overwrite destination file
+	allowOverwrite = false
+
+	// job thread number
+	jobs = 1
+
+	// is supress displayed progress bar
+	hideProgress = false
+
+	// output directory
+	outDir = ""
 )
 
 // newApp returns *cli.App [use testing]
@@ -20,7 +36,44 @@ func newApp() *cli.App {
 	app.Commands = ConvertCommands
 	app.HideHelp = true
 
+	// global options
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:        "force, f",
+			Usage:       "allow file overwrite",
+			Destination: &allowOverwrite,
+		},
+		cli.IntFlag{
+			Name:        "jobs, j",
+			Usage:       "convert job thread `n`umber",
+			Value:       1,
+			Destination: &jobs,
+		},
+		cli.BoolFlag{
+			Name:        "no-progress",
+			Usage:       "hide progress bar",
+			Destination: &hideProgress,
+		},
+		cli.StringFlag{
+			Name:        "outdir",
+			Usage:       "output `dir`ectory",
+			Value:       "",
+			Destination: &outDir,
+		},
+	}
+
 	return app
+}
+
+// validate flags
+func validateFlags(ctx *cli.Context) error {
+	// check jobs range
+	if jobs < 1 {
+		msg := fmt.Sprintf("invalid job thread number [%d]", jobs)
+		return cli.NewExitError(msg, 1)
+	}
+
+	return nil
 }
 
 func main() {
@@ -33,6 +86,13 @@ func main() {
 }
 
 func init() {
+	filter := &logutils.LevelFilter{
+		Levels:   []logutils.LogLevel{"DEBUG", "WARN", "ERROR"},
+		MinLevel: logutils.LogLevel("WARN"),
+		Writer:   os.Stderr,
+	}
+	log.SetOutput(filter)
+
 	cli.AppHelpTemplate = `
 {{- "NAME:"}}
   {{.Name}} - {{.Usage}}
@@ -44,6 +104,9 @@ func init() {
 
 USAGE:
   {{.HelpName}}
+    {{- if .VisibleFlags}}
+      {{- " [options]"}}
+    {{- end}}
     {{- if .Commands}}
       {{- " format [format options]"}}
     {{- end}}
@@ -53,6 +116,16 @@ USAGE:
       {{- " [file...]"}}
     {{- end}}
   {{- "\n"}}
+
+{{- if .VisibleFlags}}
+OPTIONS:
+  {{- "\n"}}
+  {{- range .VisibleFlags}}
+    {{- "  "}}
+    {{- .}}
+    {{- "\n"}}
+  {{- end}}
+{{- end}}
 
 {{- if .Commands}}
 FORMAT:
