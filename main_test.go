@@ -10,98 +10,100 @@ import (
 	"github.com/urfave/cli"
 )
 
+type testData struct {
+	args        []string
+	outputPaths []string
+}
+
 func isExists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
 }
 
-func TestConvertCommands(t *testing.T) {
-	tests := []struct {
-		args       []string
-		outputPath string
-	}{
-		{[]string{"kelp", "bmp", "testdata/dummy_png"}, "testdata/dummy_png.bmp"},
-		{[]string{"kelp", "png", "testdata/dummy_png"}, "testdata/dummy_png.png"},
-		{[]string{"kelp", "gif", "testdata/dummy_png"}, "testdata/dummy_png.gif"},
-		{[]string{"kelp", "jpg", "testdata/dummy_png"}, "testdata/dummy_png.jpg"},
-	}
-
-	defer func() {
-		for _, tt := range tests {
-			os.Remove(tt.outputPath)
-		}
-	}()
-
+func setupApp() *cli.App {
 	app := newApp()
 	app.Writer = ioutil.Discard
+
 	progressWriter = ioutil.Discard // supress progress bar
+	log.SetOutput(ioutil.Discard)   // supress log output
+
+	return app
+}
+
+func testHelperRunApp(t *testing.T, tests []testData) {
+	t.Helper()
+
+	app := setupApp()
 	for _, tt := range tests {
 		err := app.Run(tt.args)
 		assert.Nil(t, err)
-		assert.Equal(t, isExists(tt.outputPath), true)
+
+		for _, opath := range tt.outputPaths {
+			assert.Equal(t, isExists(opath), true)
+			os.Remove(opath)
+		}
 	}
+}
+
+func TestConvertCommands(t *testing.T) {
+	tests := []testData{
+		{
+			[]string{"kelp", "bmp", "testdata/dummy_png"},
+			[]string{"testdata/dummy_png.bmp"},
+		},
+		{
+			[]string{"kelp", "png", "testdata/dummy_png"},
+			[]string{"testdata/dummy_png.png"},
+		},
+		{
+			[]string{"kelp", "gif", "testdata/dummy_png"},
+			[]string{"testdata/dummy_png.gif"},
+		},
+		{
+			[]string{"kelp", "jpg", "testdata/dummy_png"},
+			[]string{"testdata/dummy_png.jpg"},
+		},
+	}
+
+	testHelperRunApp(t, tests)
 }
 
 func TestParallelConvert(t *testing.T) {
-	tests := []struct {
-		args        []string
-		outputPaths []string
-	}{
-		{[]string{"kelp", "-j", "2", "png", "testdata/*.tmp"}, []string{"testdata/dummy_png.png"}},
-		{[]string{"kelp", "-j", "2", "png", "testdata/**/*.tmp"}, []string{"testdata/dummy_png.png", "testdata/dir1/dummy_png.png", "testdata/dir1/dir2/dummy_png.png"}},
+	tests := []testData{
+		{
+			[]string{"kelp", "-j", "2", "png", "testdata/*.tmp"},
+			[]string{"testdata/dummy_png.png"},
+		},
+		{
+			[]string{"kelp", "-j", "2", "png", "testdata/**/*.tmp"},
+			[]string{
+				"testdata/dummy_png.png",
+				"testdata/dir1/dummy_png.png",
+				"testdata/dir1/dir2/dummy_png.png",
+			},
+		},
 	}
 
-	defer func() {
-		for _, tt := range tests {
-			for _, opath := range tt.outputPaths {
-				os.Remove(opath)
-			}
-		}
-	}()
-
-	app := newApp()
-	app.Writer = ioutil.Discard
-	progressWriter = ioutil.Discard // supress progress bar
-	for _, tt := range tests {
-		err := app.Run(tt.args)
-		assert.Nil(t, err)
-
-		for _, opath := range tt.outputPaths {
-			assert.Equal(t, isExists(opath), true)
-			os.Remove(opath)
-		}
-	}
+	testHelperRunApp(t, tests)
 }
 
 func TestExpandWildcardPath(t *testing.T) {
-	tests := []struct {
-		args        []string
-		outputPaths []string
-	}{
-		{[]string{"kelp", "png", "testdata/*.tmp"}, []string{"testdata/dummy_png.png"}},
-		{[]string{"kelp", "png", "testdata/**/*.tmp"}, []string{"testdata/dummy_png.png", "testdata/dir1/dummy_png.png", "testdata/dir1/dir2/dummy_png.png"}},
+	tests := []testData{
+		{
+			[]string{"kelp", "png", "testdata/*.tmp"},
+			[]string{"testdata/dummy_png.png"},
+		},
+		{
+			[]string{"kelp", "png", "testdata/**/*.tmp"},
+			[]string{
+				"testdata/dummy_png.png",
+				"testdata/dir1/dummy_png.png",
+				"testdata/dir1/dir2/dummy_png.png",
+			},
+		},
 	}
 
-	defer func() {
-		for _, tt := range tests {
-			for _, opath := range tt.outputPaths {
-				os.Remove(opath)
-			}
-		}
-	}()
-
-	app := newApp()
-	app.Writer = ioutil.Discard
-	progressWriter = ioutil.Discard // supress progress bar
-	for _, tt := range tests {
-		err := app.Run(tt.args)
-		assert.Nil(t, err)
-
-		for _, opath := range tt.outputPaths {
-			assert.Equal(t, isExists(opath), true)
-			os.Remove(opath)
-		}
-	}
+	testHelperRunApp(t, tests)
 }
 
 func TestForbiddenOverwrite(t *testing.T) {
@@ -110,7 +112,6 @@ func TestForbiddenOverwrite(t *testing.T) {
 
 	defer func() {
 		os.Remove(outputPath)
-		log.SetOutput(os.Stdout) // TODO fix
 		cli.OsExiter = os.Exit
 		cli.ErrWriter = os.Stderr
 	}()
@@ -121,14 +122,13 @@ func TestForbiddenOverwrite(t *testing.T) {
 	}
 	cli.ErrWriter = ioutil.Discard
 
-	app := newApp()
-	app.Writer = ioutil.Discard
-	log.SetOutput(ioutil.Discard)   // supress log output
-	progressWriter = ioutil.Discard // supress progress bar
+	app := setupApp()
 
+	// create file
 	err := app.Run(args)
 	assert.Nil(t, err)
 
+	// create duplicate file
 	err = app.Run(args)
 	assert.NotNil(t, err)
 	assert.NotEqual(t, exitcode, 0)
@@ -137,10 +137,7 @@ func TestForbiddenOverwrite(t *testing.T) {
 func TestSetOutputDirectory(t *testing.T) {
 	testdir := "./test_out"
 
-	tests := []struct {
-		args        []string
-		outputPaths []string
-	}{
+	tests := []testData{
 		{
 			[]string{"kelp", "--outdir", testdir, "png", "testdata/*.tmp"},
 			[]string{testdir + "/testdata/dummy_png.png"}},
@@ -154,25 +151,6 @@ func TestSetOutputDirectory(t *testing.T) {
 		},
 	}
 
-	defer func() {
-		for _, tt := range tests {
-			for _, opath := range tt.outputPaths {
-				os.Remove(opath)
-			}
-		}
-		os.RemoveAll(testdir)
-	}()
-
-	app := newApp()
-	app.Writer = ioutil.Discard
-	progressWriter = ioutil.Discard // supress progress bar
-	for _, tt := range tests {
-		err := app.Run(tt.args)
-		assert.Nil(t, err)
-
-		for _, opath := range tt.outputPaths {
-			assert.Equal(t, isExists(opath), true)
-			os.Remove(opath)
-		}
-	}
+	defer os.RemoveAll(testdir)
+	testHelperRunApp(t, tests)
 }
