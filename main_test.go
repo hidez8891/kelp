@@ -48,19 +48,19 @@ func testHelperRunApp(t *testing.T, tests []testData) {
 func TestConvertCommands(t *testing.T) {
 	tests := []testData{
 		{
-			[]string{"kelp", "bmp", "testdata/dummy_png"},
+			[]string{"kelp", "bmp", "testdata/dummy_png.tmp"},
 			[]string{"testdata/dummy_png.bmp"},
 		},
 		{
-			[]string{"kelp", "png", "testdata/dummy_png"},
+			[]string{"kelp", "png", "testdata/dummy_png.tmp"},
 			[]string{"testdata/dummy_png.png"},
 		},
 		{
-			[]string{"kelp", "gif", "testdata/dummy_png"},
+			[]string{"kelp", "gif", "testdata/dummy_png.tmp"},
 			[]string{"testdata/dummy_png.gif"},
 		},
 		{
-			[]string{"kelp", "jpg", "testdata/dummy_png"},
+			[]string{"kelp", "jpg", "testdata/dummy_png.tmp"},
 			[]string{"testdata/dummy_png.jpg"},
 		},
 	}
@@ -101,13 +101,23 @@ func TestExpandWildcardPath(t *testing.T) {
 				"testdata/dir1/dir2/dummy_png.png",
 			},
 		},
+		{
+			[]string{"kelp", "png", "testdata/**/*.{tmp,tmp2}"},
+			[]string{
+				"testdata/dummy_png.png",
+				"testdata/dummy_jpg.png",
+				"testdata/dir1/dummy_png.png",
+				"testdata/dir1/dir2/dummy_png.png",
+				"testdata/dir1/dir2/dummy_jpg.png",
+			},
+		},
 	}
 
 	testHelperRunApp(t, tests)
 }
 
 func TestForbiddenOverwrite(t *testing.T) {
-	args := []string{"kelp", "png", "testdata/dummy_png"}
+	args := []string{"kelp", "png", "testdata/dummy_png.tmp"}
 	outputPath := "testdata/dummy_png.png"
 
 	defer func() {

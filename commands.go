@@ -13,7 +13,7 @@ import (
 	"image/jpeg"
 	"image/png"
 
-	"github.com/mattn/go-zglob"
+	"github.com/bmatcuk/doublestar"
 	"github.com/urfave/cli"
 	"go.uber.org/atomic"
 	"golang.org/x/image/bmp"
@@ -169,7 +169,7 @@ func validateJpegFlags(ctx *cli.Context) error {
 
 // expand file path (use wildcard)
 func expandFilePath(path string) []string {
-	mathces, err := zglob.Glob(path)
+	mathces, err := doublestar.Glob(path)
 	if err != nil {
 		log.Println(fmt.Sprintf("[WARN] %v\n", err))
 	}
