@@ -10,6 +10,9 @@ import (
 )
 
 var (
+	// allow overwrite destination file
+	allowOverwrite = false
+
 	// job thread number
 	jobs = 1
 
@@ -35,6 +38,11 @@ func newApp() *cli.App {
 
 	// global options
 	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:        "force, f",
+			Usage:       "allow file overwrite",
+			Destination: &allowOverwrite,
+		},
 		cli.IntFlag{
 			Name:        "jobs, j",
 			Usage:       "convert job thread `n`umber",

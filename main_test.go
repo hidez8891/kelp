@@ -138,10 +138,26 @@ func TestForbiddenOverwrite(t *testing.T) {
 	err := app.Run(args)
 	assert.Nil(t, err)
 
-	// create duplicate file
+	// forbid create duplicate file
 	err = app.Run(args)
 	assert.NotNil(t, err)
 	assert.NotEqual(t, exitcode, 0)
+}
+
+func TestAllowOverwrite(t *testing.T) {
+	args := []string{"kelp", "-f", "png", "testdata/dummy_png.tmp"}
+	outputPath := "testdata/dummy_png.png"
+
+	defer os.Remove(outputPath)
+	app := setupApp()
+
+	// create file
+	err := app.Run(args)
+	assert.Nil(t, err)
+
+	// allow create duplicate file
+	err = app.Run(args)
+	assert.Nil(t, err)
 }
 
 func TestSetOutputDirectory(t *testing.T) {

@@ -72,7 +72,11 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 		destDir := filepath.Dir(destPath)
 		os.MkdirAll(destDir, 0666)
 
-		w, err := os.OpenFile(destPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
+		writeFlag := os.O_CREATE | os.O_WRONLY
+		if !allowOverwrite {
+			writeFlag |= os.O_EXCL
+		}
+		w, err := os.OpenFile(destPath, writeFlag, 0666)
 		if err != nil {
 			log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, destPath))
 			partialFail.Store(true)
