@@ -30,7 +30,7 @@ func threadFunc(queue chan string, wg *sync.WaitGroup, f JobFunc) chan bool {
 // Concurrent is data parallel processing
 func Concurrent(threadCount int, list []string, f JobFunc) {
 	var wg sync.WaitGroup
-	queue := make(chan string, jobs+1)
+	queue := make(chan string, jobs*10)
 
 	quit := make([]chan bool, jobs)
 	for i := 0; i < jobs; i++ {
