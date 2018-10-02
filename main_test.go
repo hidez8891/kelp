@@ -7,6 +7,8 @@ import (
 	"testing"
 	"bytes"
 
+	"image/jpeg"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
 )
@@ -185,7 +187,6 @@ func TestSetOutputDirectory(t *testing.T) {
 func TestPipeIO(t *testing.T) {
 	args := []string{"kelp", "--pipe", "jpg"}
 	src := "testdata/dummy_png.tmp"
-	dest := "testdata/dummy_jpg.tmp2"
 
 	r, err := os.Open(src)
 	assert.Nil(t, err)
@@ -202,8 +203,6 @@ func TestPipeIO(t *testing.T) {
 	assert.Nil(t, err)
 
 	// check
-	tmp, err := ioutil.ReadFile(dest)
+	_, err = jpeg.Decode(bytes.NewReader(w.Bytes()))
 	assert.Nil(t, err)
-
-	assert.Equal(t, w.Bytes(), tmp)
 }
