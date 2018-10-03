@@ -32,6 +32,12 @@ var (
 
 	// progress output writer
 	progressWriter io.Writer = os.Stdout
+
+	// pipe stdin
+	pipeStdin io.Reader = os.Stdin
+
+	// pipe stdout
+	pipeStdout io.Writer = os.Stdout
 )
 
 // common convert encoder function interface
@@ -49,17 +55,23 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 	}
 
 	Concurrent(jobs, targetFilePaths, func(srcPath string) {
+		var err error
 		if progress != nil {
 			progress.Increment()
 		}
 
-		r, err := os.Open(srcPath)
-		if err != nil {
-			log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, srcPath))
-			partialFail.Store(true)
-			return
+		var r io.Reader
+		if usePipe {
+			r = pipeStdin
+		} else {
+			r, err = os.Open(srcPath)
+			if err != nil {
+				log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, srcPath))
+				partialFail.Store(true)
+				return
+			}
+			defer r.(io.ReadCloser).Close()
 		}
-		defer r.Close()
 
 		img, _, err := image.Decode(r)
 		if err != nil {
@@ -68,21 +80,26 @@ func convert(ctx *cli.Context, converter convertEncodeFn) error {
 			return
 		}
 
-		destPath := generateDestinationPath(srcPath, ctx.Command.Name)
-		destDir := filepath.Dir(destPath)
-		os.MkdirAll(destDir, 0666)
+		var w io.Writer
+		if usePipe {
+			w = pipeStdout
+		} else {
+			destPath := generateDestinationPath(srcPath, ctx.Command.Name)
+			destDir := filepath.Dir(destPath)
+			os.MkdirAll(destDir, 0666)
 
-		writeFlag := os.O_CREATE | os.O_WRONLY
-		if !allowOverwrite {
-			writeFlag |= os.O_EXCL
+			writeFlag := os.O_CREATE | os.O_WRONLY
+			if !allowOverwrite {
+				writeFlag |= os.O_EXCL
+			}
+			w, err = os.OpenFile(destPath, writeFlag, 0666)
+			if err != nil {
+				log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, destPath))
+				partialFail.Store(true)
+				return
+			}
+			defer w.(io.WriteCloser).Close()
 		}
-		w, err := os.OpenFile(destPath, writeFlag, 0666)
-		if err != nil {
-			log.Println(fmt.Sprintf("[ERROR] %v [%s]", err, destPath))
-			partialFail.Store(true)
-			return
-		}
-		defer w.Close()
 
 		err = converter(w, img)
 		if err != nil {
@@ -125,6 +142,12 @@ func generateDestinationPath(srcPath string, destExt string) string {
 
 // fetch source file path list from command-line arguments
 func fetchSourceFilePaths(ctx *cli.Context) error {
+	if (usePipe) {
+		// set dummy filepath
+		targetFilePaths = []string{ "__dummy__" }
+		return nil
+	}
+
 	// check input files
 	// if not set file path, stop run without error.
 	if len(ctx.Args()) == 0 {

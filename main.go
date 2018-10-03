@@ -21,6 +21,9 @@ var (
 
 	// output directory
 	outDir = ""
+
+	// use command pipe
+	usePipe = false
 )
 
 // newApp returns *cli.App [use testing]
@@ -60,6 +63,11 @@ func newApp() *cli.App {
 			Value:       "",
 			Destination: &outDir,
 		},
+		cli.BoolFlag{
+			Name:        "pipe",
+			Usage:       "input from stdin, output to stdout",
+			Destination: &usePipe,
+		},
 	}
 
 	return app
@@ -71,6 +79,12 @@ func validateFlags(ctx *cli.Context) error {
 	if jobs < 1 {
 		msg := fmt.Sprintf("invalid job thread number [%d]", jobs)
 		return cli.NewExitError(msg, 1)
+	}
+
+	// use pipe mode
+	if usePipe {
+		jobs = 1             // single job
+		hideProgress = false // supress progress bar
 	}
 
 	return nil
