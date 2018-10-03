@@ -5,6 +5,9 @@ import (
 	"log"
 	"os"
 	"testing"
+	"bytes"
+
+	"image/jpeg"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
@@ -179,4 +182,27 @@ func TestSetOutputDirectory(t *testing.T) {
 
 	defer os.RemoveAll(testdir)
 	testHelperRunApp(t, tests)
+}
+
+func TestPipeIO(t *testing.T) {
+	args := []string{"kelp", "--pipe", "jpg"}
+	src := "testdata/dummy_png.tmp"
+
+	r, err := os.Open(src)
+	assert.Nil(t, err)
+	defer r.Close()
+
+	w := new(bytes.Buffer)
+
+	// pipe execute
+	pipeStdin = r
+	pipeStdout = w
+	app := setupApp()
+
+	err = app.Run(args)
+	assert.Nil(t, err)
+
+	// check
+	_, err = jpeg.Decode(bytes.NewReader(w.Bytes()))
+	assert.Nil(t, err)
 }
