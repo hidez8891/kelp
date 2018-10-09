@@ -83,8 +83,8 @@ func validateFlags(ctx *cli.Context) error {
 
 	// use pipe mode
 	if usePipe {
-		jobs = 1             // single job
-		hideProgress = false // supress progress bar
+		jobs = 1            // single job
+		hideProgress = true // supress progress bar
 	}
 
 	return nil

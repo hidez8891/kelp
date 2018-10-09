@@ -1,6 +1,6 @@
 ```text
 NAME:
-  kelp - simple image converter [version 1.1.0]
+  kelp - simple image converter [version 1.1.1]
 
 USAGE:
   kelp.exe [options] format [format options] [file...]

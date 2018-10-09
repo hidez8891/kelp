@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"testing"
@@ -23,12 +24,12 @@ func isExists(filename string) bool {
 	return err == nil
 }
 
-func setupApp() *cli.App {
+func setupApp(writer io.Writer) *cli.App {
 	app := newApp()
-	app.Writer = ioutil.Discard
+	app.Writer = writer
 
-	progressWriter = ioutil.Discard // supress progress bar
-	log.SetOutput(ioutil.Discard)   // supress log output
+	progressWriter = writer
+	log.SetOutput(writer)
 
 	return app
 }
@@ -36,7 +37,7 @@ func setupApp() *cli.App {
 func testHelperRunApp(t *testing.T, tests []testData) {
 	t.Helper()
 
-	app := setupApp()
+	app := setupApp(ioutil.Discard)
 	for _, tt := range tests {
 		err := app.Run(tt.args)
 		assert.Nil(t, err)
@@ -135,7 +136,7 @@ func TestForbiddenOverwrite(t *testing.T) {
 	}
 	cli.ErrWriter = ioutil.Discard
 
-	app := setupApp()
+	app := setupApp(ioutil.Discard)
 
 	// create file
 	err := app.Run(args)
@@ -152,7 +153,7 @@ func TestAllowOverwrite(t *testing.T) {
 	outputPath := "testdata/dummy_png.png"
 
 	defer os.Remove(outputPath)
-	app := setupApp()
+	app := setupApp(ioutil.Discard)
 
 	// create file
 	err := app.Run(args)
@@ -194,13 +195,19 @@ func TestPipeIO(t *testing.T) {
 
 	w := new(bytes.Buffer)
 
+	// watch progress/stderr output
+	progress := new(bytes.Buffer)
+
 	// pipe execute
 	pipeStdin = r
 	pipeStdout = w
-	app := setupApp()
+	app := setupApp(progress)
 
 	err = app.Run(args)
 	assert.Nil(t, err)
+
+	// check progress/stderr output
+	assert.Equal(t, 0, progress.Len())
 
 	// check
 	_, err = jpeg.Decode(bytes.NewReader(w.Bytes()))
