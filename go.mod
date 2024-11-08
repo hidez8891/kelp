@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.2.2
 	github.com/urfave/cli v1.20.0
 	go.uber.org/atomic v1.3.2
-	golang.org/x/image v0.10.0
+	golang.org/x/image v0.18.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.25
 )
 
@@ -16,5 +16,5 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-runewidth v0.0.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
 )
