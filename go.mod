@@ -1,6 +1,6 @@
 module github.com/hidez8891/kelp
 
-go 1.23.1
+go 1.25.0
 
 require (
 	github.com/bmatcuk/doublestar v1.3.4
@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.16
 	go.uber.org/atomic v1.11.0
-	golang.org/x/image v0.22.0
+	golang.org/x/image v0.38.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
 
