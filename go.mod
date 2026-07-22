@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.16
 	go.uber.org/atomic v1.11.0
-	golang.org/x/image v0.38.0
+	golang.org/x/image v0.41.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
 
